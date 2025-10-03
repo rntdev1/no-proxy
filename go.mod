@@ -1,4 +1,4 @@
-module github.com/rntdev1/goproxy
+module github.com/rntdev1/no-proxy
 
 go 1.20
 
