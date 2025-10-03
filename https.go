@@ -16,8 +16,8 @@ import (
 	"sync"
 	"sync/atomic"
 
-	"github.com/rntdev1/goproxy/internal/http1parser"
-	"github.com/rntdev1/goproxy/internal/signer"
+	"github.com/rntdev1/no-proxy/internal/http1parser"
+	"github.com/rntdev1/no-proxy/internal/signer"
 )
 
 type ConnectActionLiteral int
