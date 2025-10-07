@@ -183,7 +183,7 @@ func NewProxyHttpServer() *ProxyHttpServer {
 			ucfg := &utls.Config{
 				ServerName:         host,
 				InsecureSkipVerify: false,
-				NextProtos:         []string{"http1.1"},
+				// NextProtos:         []string{"http1.1"},
 			}
 
 			// Create a uTLS client that parrots Chrome's ClientHello.
