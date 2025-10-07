@@ -196,7 +196,7 @@ func NewProxyHttpServer() *ProxyHttpServer {
 				return nil, err
 			}
 
-			log.Println(uconn.ConnectionState().NegotiatedProtocol, uconn.HandshakeState.ServerHello.AlpnProtocol, uconn.HandshakeState.Hello.AlpnProtocols)
+			log.Println("addr", addr, "negotiated", uconn.ConnectionState().NegotiatedProtocol, "server alpn", uconn.HandshakeState.ServerHello.AlpnProtocol, "client alpn", uconn.HandshakeState.Hello.AlpnProtocols)
 
 			// Return the uTLS connection. net/http expects the returned conn to already
 			// be past the TLS handshake.
