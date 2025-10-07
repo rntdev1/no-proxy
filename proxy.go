@@ -1,12 +1,16 @@
 package goproxy
 
 import (
+	"context"
 	"io"
 	"log"
 	"net"
 	"net/http"
 	"os"
 	"regexp"
+	"time"
+
+	utls "github.com/refraction-networking/utls"
 )
 
 // The basic proxy type. Implements http.Handler.
@@ -144,13 +148,66 @@ func (proxy *ProxyHttpServer) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 
 // NewProxyHttpServer creates and returns a proxy server, logging to stderr by default.
 func NewProxyHttpServer() *ProxyHttpServer {
+	dialer := &net.Dialer{
+		Timeout:   30 * time.Second,
+		KeepAlive: 30 * time.Second,
+	}
+
+	transport := &http.Transport{
+		Proxy:                 http.ProxyFromEnvironment,
+		DialContext:           dialer.DialContext,
+		TLSHandshakeTimeout:   10 * time.Second,
+		MaxIdleConns:          100,
+		IdleConnTimeout:       90 * time.Second,
+		ExpectContinueTimeout: 1 * time.Second,
+		// Keep the original default TLSClientConfig if you have one (e.g. tlsClientSkipVerify).
+		// Note: net/http will still pass a *crypto/tls.Config to DialTLSContext.
+		TLSClientConfig: tlsClientSkipVerify,
+		// Use DialTLSContext to perform the TLS handshake ourselves with uTLS.
+		DialTLSContext: func(ctx context.Context, network, addr string) (net.Conn, error) {
+			// Dial TCP first
+			rawConn, err := dialer.DialContext(ctx, network, addr)
+			if err != nil {
+				return nil, err
+			}
+
+			// Extract host for ServerName
+			host, _, errSplit := net.SplitHostPort(addr)
+			if errSplit != nil {
+				// addr might already be a host without port
+				host = addr
+			}
+
+			// Build a small utls.Config by copying the important fields we need.
+			// utls.Config type is from the uTLS package (a fork of crypto/tls).
+			ucfg := &utls.Config{
+				ServerName:         host,
+				InsecureSkipVerify: false,
+				NextProtos:         []string{"http1.1"},
+			}
+
+			// Create a uTLS client that parrots Chrome's ClientHello.
+			// HelloChrome_Auto picks a recommended Chrome-like hello (keeps pace with Chrome).
+			uconn := utls.UClient(rawConn, ucfg, utls.HelloRandomizedALPN)
+
+			// Do the TLS handshake now. If it fails, close the underlying TCP conn.
+			if err := uconn.Handshake(); err != nil {
+				rawConn.Close()
+				return nil, err
+			}
+
+			// Return the uTLS connection. net/http expects the returned conn to already
+			// be past the TLS handshake.
+			return uconn, nil
+		},
+	}
 	proxy := ProxyHttpServer{
 		Logger: log.New(os.Stderr, "", log.LstdFlags),
 		NonproxyHandler: http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 			http.Error(w, "This is a proxy server. Does not respond to non-proxy requests.", http.StatusInternalServerError)
 		}),
-		Tr: &http.Transport{TLSClientConfig: tlsClientSkipVerify, Proxy: http.ProxyFromEnvironment},
 	}
+	proxy.Tr = transport
 	proxy.ConnectDial = dialerFromEnv(&proxy)
 	return &proxy
 }
