@@ -192,7 +192,10 @@ func NewProxyHttpServer() *ProxyHttpServer {
 
 			// Do the TLS handshake now. If it fails, close the underlying TCP conn.
 			if err := uconn.Handshake(); err != nil {
-				log.Println("addr", addr, "negotiated", uconn.HandshakeState.ServerHello.NextProtoNeg, "server alpn", uconn.HandshakeState.ServerHello.AlpnProtocol, "client alpn", uconn.HandshakeState.Hello.AlpnProtocols)
+				log.Println("addr", addr, "negotiated")
+				log.Println("client alpn", uconn.HandshakeState.Hello.AlpnProtocols)
+				log.Println("server alpn", uconn.HandshakeState.ServerHello.AlpnProtocol)
+				log.Println(uconn.HandshakeState.ServerHello.NextProtoNeg)
 				rawConn.Close()
 				return nil, err
 			}
