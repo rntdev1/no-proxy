@@ -183,7 +183,7 @@ func NewProxyHttpServer() *ProxyHttpServer {
 			ucfg := &utls.Config{
 				ServerName:         host,
 				InsecureSkipVerify: false,
-				NextProtos:         []string{"http1.1"},
+				NextProtos:         []string{"http/1.1"},
 			}
 
 			// Create a uTLS client that parrots Chrome's ClientHello.
@@ -194,8 +194,8 @@ func NewProxyHttpServer() *ProxyHttpServer {
 			if err := uconn.Handshake(); err != nil {
 				log.Println("addr", addr, "negotiated")
 				log.Println("client alpn", uconn.HandshakeState.Hello.AlpnProtocols)
-				log.Println("server alpn", uconn.HandshakeState.ServerHello.AlpnProtocol)
-				log.Println(uconn.HandshakeState.ServerHello.NextProtoNeg)
+				// log.Println("server alpn", uconn.HandshakeState.ServerHello.AlpnProtocol)
+				// log.Println(uconn.HandshakeState.ServerHello.NextProtoNeg)
 				rawConn.Close()
 				return nil, err
 			}
