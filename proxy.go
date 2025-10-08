@@ -146,6 +146,8 @@ func (proxy *ProxyHttpServer) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 	}
 }
 
+var ocid utls.ClientHelloID = utls.HelloRandomizedALPN
+
 // NewProxyHttpServer creates and returns a proxy server, logging to stderr by default.
 func NewProxyHttpServer() *ProxyHttpServer {
 	dialer := &net.Dialer{
@@ -188,19 +190,20 @@ func NewProxyHttpServer() *ProxyHttpServer {
 
 			// Create a uTLS client that parrots Chrome's ClientHello.
 			// HelloChrome_Auto picks a recommended Chrome-like hello (keeps pace with Chrome).
-			uconn := utls.UClient(rawConn, ucfg, utls.HelloChrome_Auto)
+			uconn := utls.UClient(rawConn, ucfg, ocid)
+			ocid = uconn.ClientHelloID
 
 			// Do the TLS handshake now. If it fails, close the underlying TCP conn.
 			if err := uconn.Handshake(); err != nil {
-				log.Println("addr", addr, "negotiated")
-				log.Println("client alpn", uconn.HandshakeState.Hello.AlpnProtocols)
+				// log.Println("addr", addr, "negotiated")
+				// log.Println("client alpn", uconn.HandshakeState.Hello.AlpnProtocols)
 				// log.Println("server alpn", uconn.HandshakeState.ServerHello.AlpnProtocol)
 				// log.Println(uconn.HandshakeState.ServerHello.NextProtoNeg)
 				rawConn.Close()
 				return nil, err
 			}
 
-			log.Println("addr", addr, "negotiated", uconn.ConnectionState().NegotiatedProtocol, "server alpn", uconn.HandshakeState.ServerHello.AlpnProtocol, "client alpn", uconn.HandshakeState.Hello.AlpnProtocols)
+			// log.Println("addr", addr, "negotiated", uconn.ConnectionState().NegotiatedProtocol, "server alpn", uconn.HandshakeState.ServerHello.AlpnProtocol, "client alpn", uconn.HandshakeState.Hello.AlpnProtocols)
 
 			// Return the uTLS connection. net/http expects the returned conn to already
 			// be past the TLS handshake.
