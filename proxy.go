@@ -188,7 +188,7 @@ func NewProxyHttpServer() *ProxyHttpServer {
 
 			// Create a uTLS client that parrots Chrome's ClientHello.
 			// HelloChrome_Auto picks a recommended Chrome-like hello (keeps pace with Chrome).
-			uconn := utls.UClient(rawConn, ucfg, utls.HelloRandomizedALPN)
+			uconn := utls.UClient(rawConn, ucfg, utls.HelloChrome_Auto)
 
 			// Do the TLS handshake now. If it fails, close the underlying TCP conn.
 			if err := uconn.Handshake(); err != nil {
